@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Resume Screener</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/">
+      <i class="fas fa-robot me-2"></i>AI Resume Screener
+    </a>
+    <button class="navbar-toggler" type="button"
+            data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link active" href="/"><i class="fas fa-home me-1"></i>Analyzer</a></li>
+        <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fas fa-chart-bar me-1"></i>Dashboard</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero-section">
+  <div class="container text-center">
+    <div class="hero-badge mb-3">
+      <i class="fas fa-bolt me-1"></i>Powered by NLP &amp; Machine Learning
+    </div>
+    <h1 class="hero-title">
+      AI Resume <span class="text-gradient">Screener</span>
+    </h1>
+    <p class="hero-subtitle">
+      Match your resume to any job description instantly.<br/>
+      Get a detailed skill analysis, match score &amp; improvement tips.
+    </p>
+    <div class="hero-stats">
+      <div class="stat-item"><span class="stat-number">95%</span><span class="stat-label">Accuracy</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><span class="stat-number">500+</span><span class="stat-label">Skills Detected</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><span class="stat-number">&lt;5s</span><span class="stat-label">Analysis Time</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- FLASH MESSAGES -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="container mt-3">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+      <i class="fas fa-{% if category == 'danger' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}check-circle{% endif %} me-2"></i>
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<!-- FORM SECTION -->
+<section class="form-section">
+  <div class="container">
+
+    <!-- Tab Switcher -->
+    <div class="tab-switcher">
+      <button class="tab-btn active" onclick="switchTab('text', event)">
+        <i class="fas fa-keyboard me-2"></i>Paste Text
+      </button>
+      <button class="tab-btn" onclick="switchTab('upload', event)">
+        <i class="fas fa-file-pdf me-2"></i>Upload PDF
+      </button>
+    </div>
+
+    <!-- TAB 1: Paste Text -->
+    <div id="tab-text" class="tab-content-panel active">
+      <form action="/" method="POST" id="textForm">
+        <div class="form-card">
+          <div class="row g-4">
+
+            <!-- Resume -->
+            <div class="col-lg-6">
+              <div class="input-group-custom">
+                <div class="input-header">
+                  <div class="input-icon resume-icon"><i class="fas fa-file-alt"></i></div>
+                  <div>
+                    <h5 class="input-title">Your Resume</h5>
+                    <p class="input-subtitle">Paste your complete resume text</p>
+                  </div>
+                  <span id="resumeCount" class="char-count">0 words</span>
+                </div>
+                <textarea name="resume_text" id="resumeText" class="form-textarea" rows="14"
+                  placeholder="Paste your resume here...
+
+Example:
+John Doe | Python Developer
+Skills: Python, SQL, Machine Learning...
+Experience: 3 years at TechCorp..."
+                  oninput="countWords(this,'resumeCount')">{{ resume_text or '' }}</textarea>
+                <div class="input-footer">
+                  <span class="text-muted small"><i class="fas fa-lock me-1"></i>Your data is never stored</span>
+                  <button type="button" class="btn-clear" onclick="clearField('resumeText','resumeCount')">
+                    <i class="fas fa-times me-1"></i>Clear
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- JD -->
+            <div class="col-lg-6">
+              <div class="input-group-custom">
+                <div class="input-header">
+                  <div class="input-icon jd-icon"><i class="fas fa-briefcase"></i></div>
+                  <div>
+                    <h5 class="input-title">Job Description</h5>
+                    <p class="input-subtitle">Paste the target job posting</p>
+                  </div>
+                  <span id="jdCount" class="char-count">0 words</span>
+                </div>
+                <textarea name="jd_text" id="jdText" class="form-textarea" rows="14"
+                  placeholder="Paste the job description here...
+
+Example:
+We are looking for a Data Scientist with:
+- 3+ years Python experience
+- Machine Learning expertise
+- SQL and data analysis skills..."
+                  oninput="countWords(this,'jdCount')">{{ jd_text or '' }}</textarea>
+                <div class="input-footer">
+                  <span class="text-muted small"><i class="fas fa-bullseye me-1"></i>Be specific for best results</span>
+                  <button type="button" class="btn-clear" onclick="clearField('jdText','jdCount')">
+                    <i class="fas fa-times me-1"></i>Clear
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center mt-4">
+            <button type="submit" class="btn-analyze" id="analyzeBtn">
+              <span class="btn-text"><i class="fas fa-search me-2"></i>Analyze Match</span>
+              <span class="btn-loading d-none">
+                <span class="spinner-border spinner-border-sm me-2"></span>Analyzing...
+              </span>
+            </button>
+            <p class="mt-2 text-muted small"><i class="fas fa-clock me-1"></i>Results in under 5 seconds</p>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- TAB 2: Upload PDF -->
+    <div id="tab-upload" class="tab-content-panel">
+      <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+        <div class="form-card">
+          <div class="row g-4">
+
+            <div class="col-lg-6">
+              <div class="input-group-custom">
+                <div class="input-header">
+                  <div class="input-icon pdf-icon"><i class="fas fa-file-pdf"></i></div>
+                  <div><h5 class="input-title">Upload Resume PDF</h5><p class="input-subtitle">Max 5MB · PDF or TXT</p></div>
+                </div>
+                <div class="upload-dropzone" id="dropzone"
+                     onclick="document.getElementById('pdfInput').click()">
+                  <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                  <p class="upload-text">Click to upload or drag &amp; drop</p>
+                  <p class="upload-hint">PDF or TXT · Max 5MB</p>
+                  <p class="upload-filename" id="uploadFileName"></p>
+                </div>
+                <input type="file" name="resume_file" id="pdfInput"
+                       class="d-none" accept=".pdf,.txt"
+                       onchange="handleFileSelect(this)"/>
+              </div>
+            </div>
+
+            <div class="col-lg-6">
+              <div class="input-group-custom">
+                <div class="input-header">
+                  <div class="input-icon jd-icon"><i class="fas fa-briefcase"></i></div>
+                  <div><h5 class="input-title">Job Description</h5><p class="input-subtitle">Paste the target job posting</p></div>
+                  <span id="jdUploadCount" class="char-count">0 words</span>
+                </div>
+                <textarea name="jd_text_upload" id="jdUploadText" class="form-textarea" rows="10"
+                  placeholder="Paste the job description here..."
+                  oninput="countWords(this,'jdUploadCount')"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center mt-4">
+            <button type="submit" class="btn-analyze" id="uploadBtn">
+              <span class="btn-text"><i class="fas fa-rocket me-2"></i>Upload &amp; Analyze</span>
+              <span class="btn-loading d-none">
+                <span class="spinner-border spinner-border-sm me-2"></span>Processing PDF...
+              </span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section">
+  <div class="container">
+    <h2 class="section-title text-center">How It Works</h2>
+    <div class="row g-4 mt-2">
+      <div class="col-md-3">
+        <div class="step-card">
+          <div class="step-number">01</div>
+          <div class="step-icon"><i class="fas fa-paste"></i></div>
+          <h6>Paste Resume</h6>
+          <p>Copy your resume text or upload a PDF file</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="step-card">
+          <div class="step-number">02</div>
+          <div class="step-icon"><i class="fas fa-clipboard-list"></i></div>
+          <h6>Add Job Description</h6>
+          <p>Paste the job posting you want to apply for</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="step-card">
+          <div class="step-number">03</div>
+          <div class="step-icon"><i class="fas fa-brain"></i></div>
+          <h6>AI Analysis</h6>
+          <p>NLP engine extracts skills &amp; computes similarity</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="step-card">
+          <div class="step-number">04</div>
+          <div class="step-icon"><i class="fas fa-chart-line"></i></div>
+          <h6>Get Results</h6>
+          <p>Receive match score, skill gaps &amp; suggestions</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container text-center">
+    <p class="mb-1"><i class="fas fa-robot me-2"></i><strong>AI Resume Screener</strong> — Built with Python, Flask &amp; NLP</p>
+    <p class="mb-0 text-muted small">© {{ current_year }} · Portfolio Project · <a href="https://github.com/baluvamisetti" target="_blank" class="footer-link">GitHub</a></p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function switchTab(tab, event) {
+  document.querySelectorAll(".tab-content-panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("tab-" + tab).classList.add("active");
+  event.currentTarget.classList.add("active");
+}
+function countWords(el, counterId) {
+  const words = el.value.trim().split(/\s+/).filter(w => w).length;
+  document.getElementById(counterId).textContent = words + " words";
+}
+function clearField(fieldId, counterId) {
+  document.getElementById(fieldId).value = "";
+  document.getElementById(counterId).textContent = "0 words";
+}
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (file) {
+    const el = document.getElementById("uploadFileName");
+    el.textContent = "✅ " + file.name + " (" + (file.size/1024).toFixed(1) + " KB)";
+    el.style.color = "#28a745";
+  }
+}
+document.getElementById("textForm")?.addEventListener("submit", function() {
+  const btn = document.getElementById("analyzeBtn");
+  btn.querySelector(".btn-text").classList.add("d-none");
+  btn.querySelector(".btn-loading").classList.remove("d-none");
+  btn.disabled = true;
+});
+document.getElementById("uploadForm")?.addEventListener("submit", function() {
+  const btn = document.getElementById("uploadBtn");
+  btn.querySelector(".btn-text").classList.add("d-none");
+  btn.querySelector(".btn-loading").classList.remove("d-none");
+  btn.disabled = true;
+});
+const dropzone = document.getElementById("dropzone");
+if (dropzone) {
+  dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+  dropzone.addEventListener("drop", e => {
+    e.preventDefault(); dropzone.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById("pdfInput");
+      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+      handleFileSelect(input);
+    }
+  });
+}
+</script>
+</body>
+</html>

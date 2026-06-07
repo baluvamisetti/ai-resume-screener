@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Match Results — {{ app_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/"><i class="fas fa-robot me-2"></i>AI Resume Screener</a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="/" class="btn btn-outline-light btn-sm"><i class="fas fa-redo me-1"></i>New Analysis</a>
+      <a href="/dashboard" class="btn btn-light btn-sm"><i class="fas fa-chart-bar me-1"></i>Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<!-- RESULTS HERO -->
+<section class="results-hero">
+  <div class="container">
+    <div class="row align-items-center">
+
+      <!-- Score Circle -->
+      <div class="col-lg-4 text-center mb-4 mb-lg-0">
+        <div class="score-circle-wrapper">
+          <svg class="score-svg" viewBox="0 0 200 200">
+            <circle class="score-bg" cx="100" cy="100" r="85"/>
+            <circle class="score-fill" cx="100" cy="100" r="85"
+              stroke="{{ result.progress_color }}"
+              stroke-dasharray="{{ (result.final_score_pct / 100) * 534 }} 534"/>
+          </svg>
+          <div class="score-inner">
+            <span class="score-number">{{ result.final_score_pct }}</span>
+            <span class="score-pct">%</span>
+            <span class="score-label-inner">Match Score</span>
+          </div>
+        </div>
+        <div class="verdict-badge mt-3"
+             style="background:{{ result.progress_color }}20;color:{{ result.progress_color }};border:2px solid {{ result.progress_color }}">
+          {{ result.verdict }}
+        </div>
+        <p class="mt-2 text-white-50 small">{{ result.recommendation }}</p>
+        <p class="text-white-50 small"><i class="fas fa-clock me-1"></i>{{ result.analysis_time }}</p>
+      </div>
+
+      <!-- Score Breakdown -->
+      <div class="col-lg-8">
+        <h2 class="results-title">Analysis <span class="text-gradient">Complete</span></h2>
+        <p class="results-subtitle mb-4">
+          Category detected: <strong>{{ result.predicted_category }}</strong>
+          <span class="confidence-badge ms-2">{{ result.confidence }}% confident</span>
+        </p>
+
+        <!-- TF-IDF -->
+        <div class="score-component">
+          <div class="score-comp-header">
+            <span><i class="fas fa-file-alt me-2 text-primary"></i>Text Similarity (TF-IDF)</span>
+            <span class="score-comp-val">{{ result.tfidf_score }}%</span>
+          </div>
+          <div class="progress score-progress">
+            <div class="progress-bar bg-primary" data-width="{{ result.tfidf_score }}" style="width:0%"></div>
+          </div>
+          <small class="text-white-50">Weight: 50% of final score</small>
+        </div>
+
+        <!-- Skill Match -->
+        <div class="score-component mt-3">
+          <div class="score-comp-header">
+            <span><i class="fas fa-tools me-2 text-success"></i>Skill Match</span>
+            <span class="score-comp-val">{{ result.skill_score_pct }}%</span>
+          </div>
+          <div class="progress score-progress">
+            <div class="progress-bar bg-success" data-width="{{ result.skill_score_pct }}" style="width:0%"></div>
+          </div>
+          <small class="text-white-50">Weight: 35% · {{ result.matched_count }}/{{ result.jd_skill_count }} JD skills matched</small>
+        </div>
+
+        <!-- Experience -->
+        <div class="score-component mt-3">
+          <div class="score-comp-header">
+            <span><i class="fas fa-briefcase me-2 text-warning"></i>Experience Match</span>
+            <span class="score-comp-val">{{ result.experience_score }}%</span>
+          </div>
+          <div class="progress score-progress">
+            <div class="progress-bar bg-warning" data-width="{{ result.experience_score }}" style="width:0%"></div>
+          </div>
+          <small class="text-white-50">Weight: 15% · {{ result.experience_message }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILL ANALYSIS CARDS -->
+<section class="skills-section">
+  <div class="container">
+    <h3 class="section-title"><i class="fas fa-tools me-2"></i>Skill Analysis</h3>
+    <div class="row g-4">
+
+      <div class="col-lg-4">
+        <div class="skill-card matched-card">
+          <div class="skill-card-header">
+            <i class="fas fa-check-circle text-success"></i>
+            <h6>Matched Skills</h6>
+            <span class="skill-badge badge-green">{{ result.matched_skills | length }}</span>
+          </div>
+          <div class="skill-tags">
+            {% for skill in result.matched_skills %}
+              <span class="skill-tag tag-green">{{ skill }}</span>
+            {% else %}
+              <p class="text-muted small">No matching skills found</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="skill-card missing-card">
+          <div class="skill-card-header">
+            <i class="fas fa-times-circle text-danger"></i>
+            <h6>Missing Skills</h6>
+            <span class="skill-badge badge-red">{{ result.missing_skills | length }}</span>
+          </div>
+          <div class="skill-tags">
+            {% for skill in result.missing_skills %}
+              <span class="skill-tag tag-red">{{ skill }}</span>
+            {% else %}
+              <p class="text-muted small">No missing skills — great match!</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="skill-card extra-card">
+          <div class="skill-card-header">
+            <i class="fas fa-plus-circle" style="color:#007bff"></i>
+            <h6>Extra Skills</h6>
+            <span class="skill-badge badge-blue">{{ result.extra_skills | length }}</span>
+          </div>
+          <div class="skill-tags">
+            {% for skill in result.extra_skills[:10] %}
+              <span class="skill-tag tag-blue">{{ skill }}</span>
+            {% else %}
+              <p class="text-muted small">No additional skills detected</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CHARTS ROW -->
+<section class="charts-section">
+  <div class="container">
+    <div class="row g-4">
+
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <h6 class="chart-title"><i class="fas fa-chart-pie me-2"></i>Skill Distribution</h6>
+          <canvas id="skillDonut" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <h6 class="chart-title"><i class="fas fa-chart-area me-2"></i>Score Breakdown</h6>
+          <canvas id="scoreRadar" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="chart-card">
+          <h6 class="chart-title"><i class="fas fa-trophy me-2"></i>Category Predictions</h6>
+          {% if result.top3_categories %}
+          <div class="category-list">
+            {% for cat in result.top3_categories %}
+            <div class="category-item {% if loop.first %}top-category{% endif %}">
+              <div class="cat-rank">#{{ loop.index }}</div>
+              <div class="cat-info">
+                <span class="cat-name">{{ cat.category }}</span>
+                <div class="progress cat-progress">
+                  <div class="progress-bar {% if loop.first %}bg-success{% elif loop.index == 2 %}bg-primary{% else %}bg-secondary{% endif %}"
+                       style="width:{{ cat.confidence }}%"></div>
+                </div>
+              </div>
+              <span class="cat-score">{{ cat.confidence }}%</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SUGGESTIONS + SUMMARY -->
+<section class="suggestions-section">
+  <div class="container">
+    <div class="row g-4">
+
+      <div class="col-lg-8">
+        <div class="suggestions-card">
+          <h5 class="suggestions-title">
+            <i class="fas fa-lightbulb me-2" style="color:#f6ad55"></i>Improvement Suggestions
+          </h5>
+          <div class="suggestions-list">
+            {% for suggestion in result.suggestions %}
+            <div class="suggestion-item">
+              <i class="fas fa-arrow-right suggestion-arrow"></i>
+              <span>{{ suggestion }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="summary-card">
+          <h6 class="summary-title"><i class="fas fa-user me-2"></i>Resume Summary</h6>
+          <div class="summary-row">
+            <span class="summary-label">Category</span>
+            <span class="summary-value">{{ result.predicted_category }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Experience</span>
+            <span class="summary-value">{{ result.experience_years }} yr(s)</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Total Skills</span>
+            <span class="summary-value">{{ result.resume_skill_count }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Word Count</span>
+            <span class="summary-value">{{ result.word_count }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Top Domain</span>
+            <span class="summary-value">{{ result.top_domain | replace('_',' ') | title }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container text-center">
+    <h4>Want to try another resume?</h4>
+    <p class="text-muted mb-4">Refine your resume based on the suggestions above</p>
+    <a href="/" class="btn-analyze me-3"><i class="fas fa-redo me-2"></i>New Analysis</a>
+    <a href="/dashboard" class="btn-secondary-cta"><i class="fas fa-chart-bar me-2"></i>View Dashboard</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container text-center">
+    <p class="mb-1"><i class="fas fa-robot me-2"></i><strong>AI Resume Screener</strong></p>
+    <p class="mb-0 text-muted small">© {{ current_year }} · <a href="https://github.com/baluvamisetti" target="_blank" class="footer-link">GitHub</a></p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+<script>
+// Skill Donut
+new Chart(document.getElementById("skillDonut").getContext("2d"), {
+  type: "doughnut",
+  data: {
+    labels: ["Matched","Missing","Extra"],
+    datasets:[{
+      data:[{{ result.matched_skills|length }},{{ result.missing_skills|length }},{{ result.extra_skills|length }}],
+      backgroundColor:["#28a745","#dc3545","#007bff"],
+      borderWidth:3, borderColor:"#fff"
+    }]
+  },
+  options:{ responsive:true, cutout:"65%", plugins:{ legend:{ position:"bottom" } } }
+});
+
+// Score Radar
+new Chart(document.getElementById("scoreRadar").getContext("2d"), {
+  type: "radar",
+  data: {
+    labels:["Text Match","Skill Match","Experience","Confidence"],
+    datasets:[{
+      label:"Your Score",
+      data:[{{ result.tfidf_score }},{{ result.skill_score_pct }},{{ result.experience_score }},{{ result.confidence }}],
+      backgroundColor:"rgba(102,126,234,0.2)",
+      borderColor:"rgba(102,126,234,0.8)",
+      pointBackgroundColor:"rgba(102,126,234,1)",
+      borderWidth:2
+    }]
+  },
+  options:{
+    responsive:true,
+    scales:{ r:{ min:0, max:100, ticks:{ stepSize:25 } } },
+    plugins:{ legend:{ display:false } }
+  }
+});
+</script>
+</body>
+</html>
