@@ -20,3 +20,4 @@ uploads/
 dist/
 build/
 *.egg-info/
+desktop.ini
