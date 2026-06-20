@@ -192,7 +192,7 @@ Open → [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 ## 👨‍💻 Author
 **Balu Vamisetti** · [GitHub](https://github.com/baluvamisetti) ·
-[LinkedIn](https://linkedin.com/in/baluvamisetti)
+[LinkedIn](https://linkedin.com/in/bala-subramanyam-vamisetti)
 
 ---
 
