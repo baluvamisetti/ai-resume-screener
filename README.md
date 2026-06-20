@@ -13,7 +13,7 @@ gaps and gives actionable improvement suggestions — all in under 5 seconds.
 ---
 
 ## 🌐 Live Demo
-[https://ai-resume-screener.onrender.com](https://ai-resume-screener.onrender.com)
+https://ai-resume-screener-mn0s.onrender.com
 
 ---
 
