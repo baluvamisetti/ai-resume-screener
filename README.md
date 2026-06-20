@@ -186,7 +186,23 @@ Open → [http://127.0.0.1:5000](http://127.0.0.1:5000)
 ---
 
 ## 📸 Screenshots
-*(Add screenshots of the app here after running locally)*
+### 🏠 Home Page
+![Home Page](screenshots/home.png)
+
+### 📤 Resume Upload
+![Upload PDF](screenshots/upload.png)
+
+### 📊 Match Results
+![Match Results](screenshots/results.png)
+
+### 🛠️ Skill Analysis
+![Skill Analysis](screenshots/skills.png)
+
+### 📈 HR Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### 📋 Recent Screening Results
+![Dashboard Table](screenshots/dashboard-table.png)
 
 ---
 
