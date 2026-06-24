@@ -14,6 +14,7 @@ gaps and gives actionable improvement suggestions — all in under 5 seconds.
 
 ## 🌐 Live Demo
 https://ai-resume-screener-mn0s.onrender.com
+https://web-production-3bc1.up.railway.app/
 
 ---
 
